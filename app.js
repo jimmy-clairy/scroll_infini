@@ -1,64 +1,81 @@
 import { client_id } from './config.js'
-const cardList = document.querySelector('.card-list')
 
-const search = document.getElementById('search')
-const form = document.querySelector('form')
-let lock = false
-form.addEventListener('submit', handleSubmit)
-function handleSubmit(e) {
-    e.preventDefault()
-    lock = true
-    searchValue = search.value
-}
+const imagesList = document.querySelector(".images-list");
+const errorMsg = document.querySelector(".error-msg");
+let searchQuery = "random";
+let pageIndex = 1;
 
-let page = 1
-let searchValue = ''
-
-async function fetchAPI(url) {
+async function fetchData() {
     try {
-        const resJSON = await fetch(url)
-        if (!resJSON.ok) {
-            throw new Error('----- Connection serveur impossible! -----')
+        const response = await fetch(`https://api.unsplash.com/search/photos?page=${pageIndex}&per_page=30&query=${searchQuery}&client_id=${client_id}`)
+
+        if (!response.ok) {
+            throw new Error(`Erreur: ${response.status}`)
         }
-        const resJS = await resJSON.json()
-        console.log(resJS);
-        return resJS
-    } catch (error) {
-        console.error(error);
+
+        const data = await response.json()
+
+        if (!data.total) {
+            imagesList.textContent = "";
+            throw new Error("Wopsy, rien de tel dans notre base de données ... tentez un mot clé plus précis !")
+        }
+
+        console.log(data);
+        createImages(data.results)
+    }
+    catch (error) {
+        errorMsg.textContent = `${error}`
     }
 }
+fetchData()
 
-async function imgSearch() {
-    const items = await fetchAPI(`https://api.unsplash.com/search/photos?page=${page}&query=${searchValue}&client_id=${client_id}`)
-    items.results.forEach(item => {
-        const img = document.createElement('img')
-        img.src = item.urls.small
-        cardList.appendChild(img)
-    })
-    page++
-}
-
-async function imgRandom() {
-    const items = await fetchAPI(`https://api.unsplash.com/photos/random?count=10&client_id=${client_id}`)
-    items.forEach(item => {
-        const img = document.createElement('img')
-        img.src = item.urls.small
-        cardList.appendChild(img)
+function createImages(data) {
+    data.forEach(img => {
+        const newImg = document.createElement("img");
+        newImg.src = img.urls.small;
+        imagesList.appendChild(newImg)
     })
 }
 
-async function getImg() {
-    if (lock) {
-        imgSearch()
-    } else {
-        imgRandom()
+const observer = new IntersectionObserver(handleIntersect, { rootMargin: "40%" })
+
+observer.observe(document.querySelector(".infinite-marker"))
+
+function handleIntersect(entries) {
+    console.log(entries);
+    if (window.scrollY > window.innerHeight && entries[0].isIntersecting) {
+        pageIndex++;
+        fetchData()
     }
 }
 
-const observer = new IntersectionObserver((entries) => {
-    if (entries[0].isIntersecting) {
-        getImg()
-    }
-})
+const input = document.querySelector("#search");
+const form = document.querySelector("form");
 
-observer.observe(document.querySelector('.infinite-marker'))
+form.addEventListener("submit", handleSearch)
+
+function handleSearch(e) {
+    e.preventDefault();
+
+    imagesList.textContent = "";
+    if (!input.value) {
+        errorMsg.textContent = "L'objet de la recherche de peut être vide."
+        return;
+    }
+
+    errorMsg.textContent = "";
+    searchQuery = input.value;
+    pageIndex = 1;
+    fetchData()
+}
+
+const scrollToTop = document.querySelector(".scroll-to-top");
+
+scrollToTop.addEventListener("click", pushToTop)
+
+function pushToTop() {
+    window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+    })
+}

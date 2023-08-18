@@ -61,14 +61,14 @@ form input {
   border-radius: 3px;
   box-shadow: 0 5px 6px rgba(0, 0, 0, 0.3);
 }
-.card-list {
+.images-list {
   display: grid;
   gap: 10px;
   grid-template-columns: repeat(auto-fill,minmax(300px,1fr));
   grid-auto-rows: 250px;
   margin: 0 auto;
 }
-.card-list img {
+.images-list img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -76,6 +76,8 @@ form input {
 .error-msg {
   font-size: 18px;
   margin: 10px 0;
+  font-weight: bold;
+  color: red;
 }
 
 .infinite-marker {
